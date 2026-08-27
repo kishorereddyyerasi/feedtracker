@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="theme-color" content="#FFF8F2" id="meta-theme-color" />
+  <title>🤱 FeedTracker</title>
+  <link rel="stylesheet" href="css/app.css" />
+</head>
+<body>
+<div class="app-shell">
+
+  <!-- ── Header ─────────────────────────────────────────────── -->
+  <header class="app-header">
+    <div class="header-top">
+      <div class="header-title">🤱 Feed<span>Tracker</span></div>
+      <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">🌙</button>
+    </div>
+    <div class="baby-info-bar" id="baby-info-bar"></div>
+  </header>
+
+  <!-- ── Tab Content ────────────────────────────────────────── -->
+  <div class="tab-content-area">
+
+    <!-- ═══ TAB 1: HOME ═══ -->
+    <div class="tab-pane active" id="tab-home">
+
+      <!-- Side Selector -->
+      <section class="card" id="panel-select">
+        <div class="card-title">Choose Side</div>
+        <div class="side-buttons">
+          <button class="side-btn side-btn-left" id="btn-left" aria-label="Feed left">
+            <span class="side-icon">◀</span><span>LEFT</span>
+          </button>
+          <button class="side-btn side-btn-right" id="btn-right" aria-label="Feed right">
+            <span class="side-icon">▶</span><span>RIGHT</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Active Session -->
+      <section class="card" id="panel-active" aria-live="polite">
+        <div class="active-side-name" id="active-side-name">🤱 Feeding — LEFT</div>
+        <div class="timer-display running" id="feed-timer">00:00</div>
+        <div class="timer-sub" id="feed-timer-sub">tap stop when done</div>
+        <div style="display:flex;gap:10px;">
+          <button class="manual-confirm-btn" id="btn-feed-pause" style="flex:1;font-size:15px;font-weight:700;min-height:52px;">⏸ Pause</button>
+          <button class="stop-btn" id="btn-stop" style="flex:2;">⏹ Stop Feed</button>
+        </div>
+        <div class="manual-row">
+          <button class="manual-link" id="btn-manual-toggle">Enter time manually</button>
+        </div>
+        <div class="manual-input-row" id="manual-input-row">
+          <input type="number" class="manual-input" id="manual-minutes" min="0" max="120" placeholder="min" />
+          <span style="color:var(--text-muted);font-size:13px;">min</span>
+          <input type="number" class="manual-input" id="manual-seconds" min="0" max="59" placeholder="sec" />
+          <span style="color:var(--text-muted);font-size:13px;">sec</span>
+          <button class="manual-confirm-btn" id="btn-manual-confirm">Save</button>
+        </div>
+        <div id="last-fed-info" style="display:none;margin-top:12px;text-align:center;font-size:13px;color:var(--text-muted);border-top:1px solid var(--border);padding-top:10px;"></div>
+      </section>
+
+      <!-- Next Feed -->
+      <section class="card" id="panel-next">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div class="card-title" style="margin-bottom:0;">Next Feed</div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <label style="font-size:11px;color:var(--text-muted);font-weight:600;">Interval:</label>
+            <input type="number" id="feed-interval-input" min="0.5" max="6" step="0.5" value="2"
+              style="width:50px;padding:5px 8px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:14px;font-weight:700;text-align:center;" />
+            <span style="font-size:11px;color:var(--text-muted);font-weight:600;">hrs</span>
+          </div>
+        </div>
+        <div class="suggestion-badge" id="suggestion-badge"><span id="suggestion-text"></span></div>
+        <div class="next-timer-display" id="next-timer">2:00:00</div>
+        <div class="next-timer-sub" id="next-timer-sub">until next feed</div>
+        <div class="progress-track" style="margin-top:8px;">
+          <div class="progress-fill" id="progress-fill" style="width:100%;background:var(--green);"></div>
+        </div>
+        <div class="progress-labels">
+          <span id="prog-label-left">2h</span><span id="prog-label-mid">1h</span><span>0</span>
+        </div>
+        <div class="overdue-banner" id="overdue-banner">
+          <span id="overdue-text">⏰ It's been over 2 hours since the last feed!</span><br>
+          <span style="font-weight:400;font-size:13px;">Feed on demand — baby may be hungry now 🍼</span>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:12px;">
+          <button class="manual-confirm-btn" id="btn-next-pause" style="flex:1;">⏸ Pause</button>
+          <button class="manual-confirm-btn" id="btn-next-stop"  style="flex:1;">⏹ Stop</button>
+        </div>
+      </section>
+
+      <!-- Baby Tracker -->
+      <section class="card">
+        <div class="card-title">Baby Tracker — Today</div>
+        <div class="tracker-buttons">
+          <div class="tracker-card urine">
+            <span class="t-icon">💧</span>
+            <span class="t-count" id="count-urine">0</span>
+            <span class="t-label">URINE</span>
+            <div class="t-controls">
+              <button class="t-minus" data-type="urine">−</button>
+              <button class="t-plus"  data-type="urine">+</button>
+            </div>
+          </div>
+          <div class="tracker-card motion">
+            <span class="t-icon">💩</span>
+            <span class="t-count" id="count-motion">0</span>
+            <span class="t-label">MOTION</span>
+            <div class="t-controls">
+              <button class="t-minus" data-type="motion">−</button>
+              <button class="t-plus"  data-type="motion">+</button>
+            </div>
+          </div>
+          <div class="tracker-card diaper">
+            <span class="t-icon">🔄</span>
+            <span class="t-count" id="count-diaper">0</span>
+            <span class="t-label">DIAPER</span>
+            <div class="t-controls">
+              <button class="t-minus" data-type="diaper">−</button>
+              <button class="t-plus"  data-type="diaper">+</button>
+            </div>
+          </div>
+        </div>
+        <button class="tracker-history-toggle" id="btn-tracker-history">📅 Show 10-Day History</button>
+        <div id="tracker-history-container" style="display:none;"></div>
+      </section>
+
+      <!-- Feed History -->
+      <section class="card">
+        <div class="card-title">Feed History</div>
+        <div id="history-container">
+          <div class="history-empty">No feeds logged yet.</div>
+        </div>
+        <div class="btn-row">
+          <button class="clear-btn hidden" id="btn-export-feed">📥 Export CSV</button>
+          <button class="clear-btn hidden" id="btn-clear-feeds">🗑 Clear All</button>
+        </div>
+      </section>
+    </div><!-- /tab-home -->
+
+    <!-- ═══ TAB 2: MEDICINES ═══ -->
+    <div class="tab-pane" id="tab-meds">
+
+      <!-- Add Medicine Form -->
+      <section class="card">
+        <div class="card-title">Add Medicine / Syrup</div>
+        <div class="med-form">
+          <div class="form-row">
+            <label class="form-label">Medicine / Syrup Name</label>
+            <input type="text" class="form-input" id="med-name-input" placeholder="e.g. Paracetamol, Vitamin D drops" />
+          </div>
+          <div class="form-row-inline">
+            <div class="form-row">
+              <label class="form-label">Dosage</label>
+              <input type="number" class="form-input" id="med-dosage-input" min="0" step="0.1" placeholder="e.g. 2.5" />
+            </div>
+            <div class="form-row">
+              <label class="form-label">Unit</label>
+              <select class="form-select" id="med-unit-input">
+                <option value="ml">ml</option>
+                <option value="mg">mg</option>
+                <option value="drops">drops</option>
+                <option value="tablet">tablet</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <label class="form-label">Frequency — every X hours</label>
+            <input type="number" class="form-input" id="med-freq-input" min="1" max="48" placeholder="e.g. 8 (every 8 hours)" />
+          </div>
+          <button class="primary-btn" id="btn-add-med">+ Add Medicine</button>
+        </div>
+      </section>
+
+      <!-- Medicine List -->
+      <section class="card">
+        <div class="card-title">Today's Medicines</div>
+        <div id="med-list-container">
+          <div class="history-empty">No medicines added yet.</div>
+        </div>
+      </section>
+    </div><!-- /tab-meds -->
+
+    <!-- ═══ TAB 3: PROFILE ═══ -->
+    <div class="tab-pane" id="tab-profile">
+
+      <!-- Profile Form -->
+      <section class="card">
+        <div class="profile-avatar">👶</div>
+        <div class="profile-saved-info hidden" id="profile-display">
+          <h2 id="profile-baby-name-display"></h2>
+          <p id="profile-age-display"></p>
+          <p id="profile-mother-display"></p>
+        </div>
+        <div class="divider"></div>
+        <div class="section-label">Edit Profile</div>
+        <div class="med-form">
+          <div class="form-row">
+            <label class="form-label">Mother's Name (optional)</label>
+            <input type="text" class="form-input" id="profile-mother" placeholder="e.g. Priya" />
+          </div>
+          <div class="form-row">
+            <label class="form-label">Baby's Name (optional)</label>
+            <input type="text" class="form-input" id="profile-baby" placeholder="e.g. Arjun" />
+          </div>
+          <div class="form-row">
+            <label class="form-label">Baby's Date of Birth (optional)</label>
+            <input type="date" class="form-input" id="profile-dob" />
+          </div>
+          <button class="primary-btn" id="btn-save-profile">💾 Save Profile</button>
+        </div>
+      </section>
+
+      <!-- Export All -->
+      <section class="card">
+        <div class="card-title">Export Data</div>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">
+          Export all feeds, baby tracker, and medicine logs into a single CSV file.
+        </p>
+        <button class="primary-btn" id="btn-export-all">📥 Export Everything as CSV</button>
+      </section>
+
+      <!-- Help -->
+      <section class="card">
+        <div class="card-title">Help &amp; Support</div>
+        <div class="help-box">
+          For any support or issues, please reach out to<br>
+          <strong>Kishore Reddy Yerasi</strong>
+        </div>
+      </section>
+
+    </div><!-- /tab-profile -->
+
+  </div><!-- /tab-content-area -->
+
+  <!-- ── Bottom Tab Bar ──────────────────────────────────────── -->
+  <nav class="tab-bar">
+    <button class="tab-item active" data-tab="tab-home">
+      <span class="tab-icon">🏠</span>Home
+    </button>
+    <button class="tab-item" data-tab="tab-meds">
+      <span class="tab-icon">💊</span>Medicines
+    </button>
+    <button class="tab-item" data-tab="tab-profile">
+      <span class="tab-icon">👤</span>Profile
+    </button>
+  </nav>
+
+</div><!-- /app-shell -->
+
+<script src="js/helpers.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/notifications.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
