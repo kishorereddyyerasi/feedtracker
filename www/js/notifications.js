@@ -8,47 +8,92 @@ let notificationsReady = false;
 let LocalNotifications = null;
 
 function isNative() {
-  return window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
+  return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
 }
 
 async function initNotifications() {
-  if (!isNative()) return;
+  if (!isNative()) {
+    console.log('[FT] Running in browser — skipping native notifications');
+    return;
+  }
   try {
-    // Correct way to access Capacitor plugins in WebView — no dynamic import
     LocalNotifications = window.Capacitor.Plugins.LocalNotifications;
     if (!LocalNotifications) {
-      console.warn('LocalNotifications plugin not available');
+      console.warn('[FT] LocalNotifications plugin NOT found in Capacitor.Plugins');
+      showToast('⚠️ Notifications plugin missing');
       return;
     }
+
+    // Create notification channel (Android 8+)
+    try {
+      await LocalNotifications.createChannel({
+        id:          'feedtracker',
+        name:        'Feed Reminders',
+        description: 'Alerts when next feed is due',
+        importance:  5,        // IMPORTANCE_HIGH — shows as heads-up + sound
+        visibility:  1,        // VISIBILITY_PUBLIC — shows on lock screen
+        sound:       'default',
+        vibration:   true,
+        lights:      true,
+        lightColor:  '#E8845A',
+      });
+      console.log('[FT] Notification channel created');
+    } catch (ce) {
+      console.warn('[FT] Channel creation error (may already exist):', ce);
+    }
+
+    // Request permission
     const perm = await LocalNotifications.requestPermissions();
+    console.log('[FT] Notification permission:', JSON.stringify(perm));
     notificationsReady = perm.display === 'granted';
-    console.log('Notifications permission:', perm.display);
+
+    if (!notificationsReady) {
+      showToast('⚠️ Please allow notifications for feed reminders');
+    } else {
+      console.log('[FT] Notifications ready ✅');
+    }
   } catch (e) {
-    console.warn('Notifications init failed:', e);
+    console.warn('[FT] Notifications init failed:', e);
   }
 }
 
 async function scheduleNextFeedNotification(intervalMs) {
   await cancelNextFeedNotification();
-  if (!isNative() || !notificationsReady || !LocalNotifications) return;
+
+  if (!isNative()) return;
+
+  if (!LocalNotifications) {
+    console.warn('[FT] Cannot schedule — plugin not available');
+    return;
+  }
+  if (!notificationsReady) {
+    console.warn('[FT] Cannot schedule — permission not granted');
+    // Try requesting again
+    try {
+      const perm = await LocalNotifications.requestPermissions();
+      notificationsReady = perm.display === 'granted';
+    } catch (_) {}
+    if (!notificationsReady) return;
+  }
+
   try {
     const at = new Date(Date.now() + intervalMs);
-    await LocalNotifications.schedule({
-      notifications: [{
-        id:           1001,
-        title:        '🤱 Time for Feed!',
-        body:         "Your baby's next feed is due now. 🍼",
-        schedule:     { at, allowWhileIdle: true },
-        sound:        null,
-        channelId:    'feedtracker',
-        smallIcon:    'ic_notification',
-        actionTypeId: '',
-        extra:        null,
-      }]
-    });
-    console.log('Notification scheduled for', at);
+    const notif = {
+      id:           1001,
+      title:        '🤱 Time for Feed!',
+      body:         "Your baby's next feed is due now. 🍼",
+      schedule:     { at, allowWhileIdle: true },
+      channelId:    'feedtracker',
+      smallIcon:    'ic_notification',
+      actionTypeId: '',
+      extra:        null,
+    };
+    await LocalNotifications.schedule({ notifications: [notif] });
+    console.log('[FT] Notification scheduled for:', at.toLocaleTimeString());
+    showToast('🔔 Reminder set for ' + at.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
   } catch (e) {
-    console.warn('Schedule notification failed:', e);
+    console.warn('[FT] Schedule notification failed:', e);
+    showToast('⚠️ Could not set reminder: ' + e.message);
   }
 }
 
@@ -56,6 +101,7 @@ async function cancelNextFeedNotification() {
   if (!isNative() || !LocalNotifications) return;
   try {
     await LocalNotifications.cancel({ notifications: [{ id: 1001 }] });
+    console.log('[FT] Notification cancelled');
   } catch (_) {}
 }
 
@@ -68,7 +114,7 @@ function triggerFeedAlert() {
       const osc = ctx.createOscillator(), gain = ctx.createGain();
       osc.connect(gain); gain.connect(ctx.destination);
       osc.frequency.value = freq; osc.type = 'sine';
-      gain.gain.setValueAtTime(0.5, ctx.currentTime + start);
+      gain.gain.setValueAtTime(0.6, ctx.currentTime + start);
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
       osc.start(ctx.currentTime + start);
       osc.stop(ctx.currentTime + start + dur + 0.05);
